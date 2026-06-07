@@ -17,7 +17,7 @@ const uploadHelper = multer({ storage: fileStorage });
 
 // Upgraded relational database credential matrix mapping rule for public cloud connection pipelines
 const db = mysql.createConnection({ 
-  host: process.env.DB_HOST || aquarium-live-db-userrracc01-ea82.g.aivencloud.com, 
+  host: process.env.DB_HOST || '://aivencloud.com', 
   port: process.env.DB_PORT || 26061,
   user: process.env.DB_USER || 'avnadmin', 
   password: process.env.DB_PASSWORD || 'AVNS_0e7hORq299KWlzLqkQ3', // <-- Keep your secret password string inside these single quotes!
@@ -26,6 +26,7 @@ const db = mysql.createConnection({
     rejectUnauthorized: false
   }
 });
+
 
 
 db.connect((err) => {
