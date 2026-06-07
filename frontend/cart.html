@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cart - FishBook</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* Cart page styles */
+.cart-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+.cart-container h2 { font-size: 28px; font-weight: 700; color: var(--neutral-900); margin-bottom: 24px; }
+.cart-list { margin: 24px 0; display: flex; flex-direction: column; gap: 16px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); transition: all 0.2s ease; }
+.cart-item:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+.cart-item-left { display: flex; gap: 16px; flex: 1; align-items: center; }
+.cart-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; }
+.cart-item-meta { display: flex; flex-direction: column; gap: 4px; }
+.item-name { font-weight: 700; font-size: 15px; color: var(--neutral-900); }
+.item-addr { font-size: 13px; color: var(--neutral-500); }
+.cart-item-right { display: flex; gap: 12px; align-items: center; }
+.item-price { color: var(--accent); font-weight: 800; font-size: 16px; min-width: 100px; text-align: right; }
+.remove-btn { background-color: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s ease; }
+.remove-btn:hover { background-color: var(--accent-600); transform: translateY(-1px); }
+.cart-summary { background: var(--neutral-50); padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin: 24px 0; font-size: 16px; font-weight: 600; }
+#cart-total-price { color: var(--accent); font-size: 20px; font-weight: 800; }
+.checkout-btn { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-600) 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+.checkout-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(30, 136, 229, 0.3); }
+.empty-msg { text-align: center; padding: 40px 20px; color: var(--neutral-500); font-size: 16px; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="navbar">
+<div class="navbar-inner">
+<div class="logo">FishBook</div>
+<div class="nav-right">
+<!-- PROFILE_BAR_PLACEHOLDER -->
+</div>
+</div>
+</div>
+<div class="cart-container">
+<h2>Your Shopping Cart</h2>
+
+<!-- Hidden navigation form to maintain login details -->
+<form id="hidden-back-form" action="/" method="POST" class="hidden">
+  <input type="hidden" name="activeUser" id="back-form-username">
+</form>
+
+<!-- Custom button replacement instead of raw hyperlink redirect -->
+<button type="button" onclick="goBackToMarket()" style="display: inline-flex; align-items: center; gap: 8px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 600; margin-bottom: 16px; padding: 8px 12px; border-radius: 6px; background: #f1f5f9; border: none; cursor: pointer; transition: all 0.2s;">
+  <span style="font-size: 18px;">←</span> Back to Market
+</button>
+
+<div id="cart-list" class="cart-list"></div>
+<div class="cart-summary">
+<span>Grand Total:</span>
+<span id="cart-total-price">₱0.00</span>
+</div>
+<button class="checkout-btn" onclick="submitCheckout()">Confirm Order & Checkout</button>
+</div>
+
+<form id="hidden-cart-form" action="/buy-fish" method="POST" class="hidden">
+<input type="hidden" name="buyer" id="form-buyer">
+<input type="hidden" name="breed" id="form-breed-list">
+<input type="hidden" name="price" id="form-total-price">
+<input type="hidden" name="items" id="form-items">
+</form>
+
+<script>
+let cart = JSON.parse(localStorage.getItem('fish_cart')) || [];
+
+function renderCartPage() {
+  const listContainer = document.getElementById('cart-list');
+  const totalDisplay = document.getElementById('cart-total-price');
+  
+  if (cart.length === 0) {
+    listContainer.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
+    totalDisplay.innerText = '₱0.00';
+    return;
+  }
+  
+  let listHtml = '';
+  cart.forEach((item, index) => {
+    const qty = item.quantity ? parseInt(item.quantity) : 1;
+    const addr = item.address ? `<div class="item-addr">Addr: ${item.address}</div>` : '';
+    const itemTotal = (parseFloat(item.price) || 0) * qty;
+    const img = item.image || '/uploads/placeholder.png';
+    const sellerName = item.seller ? item.seller : 'Official Merchant';
+    
+    listHtml += `
+    <div class="cart-item">
+      <!-- Checkbox Selection -->
+      <div style="margin-right: 12px; display: flex; align-items: center;">
+        <input type="checkbox" id="check-${index}" onchange="calculateGrandTotal()" checked style="width: 18px; height: 18px; cursor: pointer;">
+      </div>
+      
+      <!-- Fish Details Left Metadata -->
+      <div class="cart-item-left">
+        <img src="${img}" class="cart-thumb">
+        <div class="cart-item-meta">
+          <div class="item-name">${item.breed}</div>
+          <div style="font-size: 12px; color: var(--primary); font-weight: 600;">Store Seller: @${sellerName}</div>
+          ${addr}
+        </div>
+      </div>
+      
+      <!-- Quantity Changer and Total Right Panel -->
+      <div class="cart-item-right" style="gap: 20px;">
+        <div style="display: inline-flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; overflow: hidden;">
+          <button type="button" onclick="updateQty(${index}, -1)" style="padding: 6px 12px; background: none; border: none; font-weight: bold; cursor: pointer; color: #64748b;">-</button>
+          <span id="qty-text-${index}" style="padding: 0 8px; font-weight: 700; min-width: 20px; text-align: center; font-size: 14px; color: #1e293b;">${qty}</span>
+          <button type="button" onclick="updateQty(${index}, 1)" style="padding: 6px 12px; background: none; border: none; font-weight: bold; cursor: pointer; color: #64748b;">+</button>
+        </div>
+        
+        <span class="item-price" id="price-display-${index}" style="min-width: 110px;">₱${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+        <button class="remove-btn" onclick="removeItem(${index})">Remove</button>
+      </div>
+    </div>`;
+  });
+  
+  listContainer.innerHTML = listHtml;
+  calculateGrandTotal();
+}
+
+function updateQty(index, delta) {
+  let currentQty = cart[index].quantity ? parseInt(cart[index].quantity) : 1;
+  currentQty += delta;
+  
+  if (currentQty < 1) return;
+  
+  cart[index].quantity = currentQty;
+  localStorage.setItem('fish_cart', JSON.stringify(cart));
+  
+  document.getElementById(`qty-text-${index}`).innerText = currentQty;
+  const singleItemPrice = parseFloat(cart[index].price) || 0;
+  const newRowTotal = singleItemPrice * currentQty;
+  document.getElementById(`price-display-${index}`).innerText = '₱' + newRowTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  
+  calculateGrandTotal();
+}
+
+function calculateGrandTotal() {
+  let checkedTotal = 0;
+  cart.forEach((item, index) => {
+    const checkbox = document.getElementById(`check-${index}`);
+    if (checkbox && checkbox.checked) {
+      const qty = item.quantity ? parseInt(item.quantity) : 1;
+      checkedTotal += (parseFloat(item.price) || 0) * qty;
+    }
+  });
+  document.getElementById('cart-total-price').innerText = '₱' + checkedTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function removeItem(index) {
+  cart.splice(index, 1);
+  localStorage.setItem('fish_cart', JSON.stringify(cart));
+  renderCartPage();
+}
+
+function submitCheckout() {
+  let selectedItems = [];
+  let checkoutTotal = 0;
+  
+  cart.forEach((item, index) => {
+    const checkbox = document.getElementById(`check-${index}`);
+    if (checkbox && checkbox.checked) {
+      selectedItems.push(item);
+      const operationalQty = item.quantity ? parseInt(item.quantity) : 1;
+      checkoutTotal += (parseFloat(item.price) || 0) * operationalQty;
+    }
+  });
+  
+  if (selectedItems.length === 0) {
+    alert("Please check at least one item to purchase!");
+    return;
+  }
+  
+  const userSpan = document.getElementById('username-span');
+  const currentUser = userSpan ? userSpan.innerText.replace('@', '') : 'Guest';
+  
+  const breedsList = selectedItems.map(item => `${item.breed} (x${item.quantity || 1})`).join(', ');
+  
+  // NEW: Extracts the actual seller of the checked items to send to backend server routes
+  const sellersList = selectedItems.map(item => item.seller || 'Official Merchant').join(', ');
+  
+  document.getElementById('form-buyer').value = currentUser;
+  document.getElementById('form-breed-list').value = breedsList;
+  document.getElementById('form-total-price').value = checkoutTotal;
+  document.getElementById('form-items').value = JSON.stringify(selectedItems);
+  
+  // Dynamic generation parameter field mapping
+  let sellerInput = document.getElementById('form-seller-list');
+  if (!sellerInput) {
+    sellerInput = document.createElement('input');
+    sellerInput.type = 'hidden';
+    sellerInput.name = 'seller_username';
+    sellerInput.id = 'form-seller-list';
+    document.getElementById('hidden-cart-form').appendChild(sellerInput);
+  }
+  sellerInput.value = sellersList;
+  
+  const remainingCart = cart.filter((_, index) => {
+    const checkbox = document.getElementById(`check-${index}`);
+    return checkbox ? !checkbox.checked : true;
+  });
+  localStorage.setItem('fish_cart', JSON.stringify(remainingCart));
+  
+  document.getElementById('hidden-cart-form').submit();
+}
+
+function goBackToMarket() {
+  const userSpan = document.getElementById('username-span');
+  const currentUser = userSpan ? userSpan.innerText.replace('@', '').trim() : 'Guest';
+  document.getElementById('back-form-username').value = currentUser;
+  document.getElementById('hidden-back-form').submit();
+}
+
+renderCartPage();
+</script>
+</body>
+</html>

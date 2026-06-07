@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Aquarium Pet Fish Marketplace</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+/* Minimalist Premium Toast Notification Card */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.toast-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.toast-icon {
+  color: #0ea5e9;
+  font-size: 16px;
+}
+
+
+/* Core layout overrides kept internal for rapid rendering speeds */
+.buy-action-btn { padding:10px 12px; border-radius:8px; border:0; background:linear-gradient(90deg,var(--accent),var(--accent-600)); color:#fff; font-weight:700; cursor:pointer; }
+.modal { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; }
+.modal.show { display: flex; }
+.modal-sep { border:0; border-top:1px solid #f1f5f9; margin:16px 0; }
+
+/* Premium Two-Column Split Pop-up Card Layout Configuration */
+.modal-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); }
+.modal-dialog { position: relative; background: #ffffff; width: 92%; max-width: 860px; max-height: 85vh; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); overflow: hidden; border: 1px solid #f1f5f9; display: flex; flex-direction: row; animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes modalPop { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+@media (max-width: 768px) { .modal-dialog { flex-direction: column; overflow-y: auto; max-height: 90vh; } }
+
+.modal-header { position: absolute; top: 16px; right: 16px; z-index: 10; }
+.modal-close { background: rgba(255,255,255,0.9); border: 1px solid #e2e8f0; color: #64748b; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(4px); }
+.modal-close:hover { background: #ffffff; color: #0f172a; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+/* Left Column Panel - High-Res Preview Live View Block */
+.modal-image-pane { width: 45%; background: #0f172a; display: flex; align-items: center; justify-content: center; position: relative; min-height: 400px; }
+@media (max-width: 768px) { .modal-image-pane { width: 100%; height: 240px; min-height: auto; } }
+.modal-image { width: 100%; height: 100%; object-fit: cover; }
+.live-badge { position: absolute; top: 16px; left: 16px; background: rgba(14, 165, 164, 0.9); color: white; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; }
+.live-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+@keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+/* Right Column Panel - Item Context Parameters & Feedback Channels */
+.modal-content-pane { width: 55%; padding: 32px; display: flex; flex-direction: column; max-height: 85vh; overflow-y: auto; box-sizing: border-box; background: #ffffff; }
+@media (max-width: 768px) { .modal-content-pane { width: 100%; max-height: none; padding: 24px; } }
+
+.modal-meta { margin-bottom: 24px; }
+.modal-breed { font-size: 28px; font-weight: 800; color: #0f172a; margin: 0 0 6px; letter-spacing: -0.5px; }
+.modal-price { font-size: 24px; font-weight: 700; color: #0ea5e9; margin: 0 0 16px; }
+.modal-desc-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+.modal-desc { font-size: 14px; color: #475569; line-height: 1.6; margin: 0; background: #f8fafc; padding: 14px 16px; border-radius: 12px; border: 1px solid #f1f5f9; }
+
+/* Review Feed List Components */
+.modal-reviews { margin-bottom: 24px; }
+.modal-reviews h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.reviews-list { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; max-height: 150px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+/* Interactive Forms Input Panel Settings */
+.reviews-input { display: flex; gap: 8px; align-items: center; }
+.review-rating { padding: 10px 8px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; outline: none; }
+.review-text { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; transition: border 0.2s; color: #0f172a; font-family: inherit; }
+.review-text:focus { border-color: #0ea5e9; }
+.reviews-input .btn-primary { padding: 10px 16px; background: #0ea5e9; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+.reviews-input .btn-primary:hover { background: #0284c7; }
+
+/* Alternate Specimen Items Horizontal Swiper Panels */
+.modal-other h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.other-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.thumb-small { display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 10px; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+.thumb-small:hover { border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-1px); }
+.thumb-small img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+.thumb-caption { font-size: 12px; font-weight: 600; color: #475569; }
+</style>
+</head>
+<body>
+<div class="navbar">
+<div class="navbar-inner">
+<div class="logo">FishBook</div>
+<div class="nav-right">
+<!-- PROFILE_BAR_PLACEHOLDER -->
+</div>
+</div>
+</div>
+
+<!--  -------------------------------------------------------------->
+<!-- Elegant Minimalist Toast Notification Element Container -->
+<div id="custom-toast" class="toast-notification">
+  <span class="toast-icon">✓</span>
+  <span id="toast-message-text">Item added to cart</span>
+</div>
+
+
+
+<div class="search-container">
+<input type="text" id="market-search" class="search-bar" placeholder="Search for aquarium fish breeds or descriptions..." onkeyup="filterProducts()">
+</div>
+<div class="categories-wrapper">
+<div class="category-tag active" onclick="selectCategory(this, 'all')">All Breeds</div>
+<div class="category-tag" onclick="selectCategory(this, 'goldfish')">Goldfish</div>
+<div class="category-tag" onclick="selectCategory(this, 'guppy')">Guppy</div>
+<div class="category-tag" onclick="selectCategory(this, 'betta')">Betta</div>
+<div class="category-tag" onclick="selectCategory(this, 'discus')">Discus/Others</div>
+</div>
+<div class="container">
+<div class="product-grid" id="product-grid-container">
+<!-- DATA_PLACEHOLDER -->
+</div>
+</div>
+<form id="hidden-view-cart" action="/view-cart" method="POST" class="hidden">
+<input type="hidden" name="activeUser" id="cart-session-user">
+</form>
+
+<!--  Split Live View Dialog Popup Layout -->
+<div id="listing-modal" class="modal" aria-hidden="true">
+<div class="modal-overlay" onclick="closeListingModal()"></div>
+<div class="modal-dialog">
+<div class="modal-header">
+<button class="modal-close" onclick="closeListingModal()" aria-label="Close">×</button>
+</div>
+<!-- Left Column Panel - Specimen Live View Photograph -->
+<div class="modal-image-pane">
+<div class="live-badge"><span class="live-dot"></span>Live View</div>
+<img id="modal-image" class="modal-image" src="" alt="Listing image">
+</div>
+<!-- Right Column Panel - Details parameters, Feedback Feed & Recommendations -->
+<div class="modal-content-pane">
+<div class="modal-meta">
+<h3 id="modal-breed" class="modal-breed"></h3>
+<div id="modal-price" class="modal-price"></div>
+<span class="modal-desc-label">Product Description</span>
+<p id="modal-desc" class="modal-desc"></p>
+</div>
+<div class="modal-reviews">
+<h4>Buyer Reviews & Ratings</h4>
+<div id="reviews-list" class="reviews-list"></div>
+<div class="reviews-input">
+<select id="review-rating" class="review-rating">
+<option value="5">5 ★</option>
+<option value="4">4 ★</option>
+<option value="3">3 ★</option>
+<option value="2">2 ★</option>
+<option value="1">1 ★</option>
+</select>
+<input id="review-text" placeholder="Write a short review..." class="review-text">
+<button onclick="submitReview()" class="btn-primary">Add</button>
+</div>
+</div>
+<div class="modal-other">
+<h4>Explore Other Stock Specimens</h4>
+<div id="other-list" class="other-list"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Cart confirm modal overlay structures -->
+<div id="cart-confirm-modal" class="cart-confirm-modal" aria-hidden="true">
+<div class="cart-confirm-overlay" onclick="closeCartConfirm()"></div>
+<div class="cart-confirm-card" style="background:#ffffff; padding:24px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.05); max-width:400px; width:90%; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1300; border:1px solid #f1f5f9;">
+<h3 class="cart-confirm-title" style="margin:0 0 12px; font-size:18px; font-weight:800; color:#0f172a;">Add to Shopping Cart</h3>
+<div class="cart-confirm-meta" style="font-size:14px; color:#475569; margin-bottom:16px;"><strong id="confirm-breed" style="color:#0f172a;"></strong> — <span id="confirm-price" style="color:#0ea5e9; font-weight:700;"></span></div>
+<label class="cart-confirm-meta" style="display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:6px;">Order Quantity</label>
+<input id="confirm-qty" type="number" min="1" value="1" class="cart-confirm-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:14px; outline:none; font-family:inherit;">
+<label class="cart-confirm-meta" style="display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:6px;">Shipping Address Destination</label>
+<input id="confirm-address" placeholder="Enter full delivery destination address" class="cart-confirm-input" style="width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:20px; outline:none; font-family:inherit;">
+<div class="cart-confirm-actions" style="display:flex; gap:10px; justify-content:flex-end;">
+<button class="buy-action-btn" onclick="confirmAddToCart()" style="background:#0ea5e9; color:#ffffff; padding:10px 16px; border:0; border-radius:8px; font-weight:600; cursor:pointer;">Confirm Addition</button>
+<button class="btn-cancel" onclick="closeCartConfirm()" style="background:#f1f5f9; color:#475569; padding:10px 16px; border:0; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+</div>
+</div>
+</div>
+
+<footer class="site-footer" style="background:#ffffff; padding:24px 0; border-top:1px solid #cbd5e1; margin-top:40px;">
+<div class="container text-center" style="text-align:center; font-size:13px; color:#64748b;">
+<strong>Contact Support Line:</strong>
+Email: <a href="mailto:fishbookphilippines@gmail.com" style="color:#0ea5e9; text-decoration:none;">fishbookphilippines@gmail.com</a>
+&nbsp;•&nbsp;
+Phone Contact: <a href="tel:09123456789" style="color:#0ea5e9; text-decoration:none;">09123456789</a>
+</div>
+</footer>
+
+<script>
+// --- client scripts framework controllers ---
+let cart = JSON.parse(localStorage.getItem('fish_cart')) || [];
+let currentActiveCategory = 'all';
+let currentModalBreed = '';
+
+function openListingModal(el) {
+  if (!el) return;
+  const container = el.closest ? el.closest('.product-card') || el.closest('.item-row') : el;
+  const img = (container && container.dataset && container.dataset.image) ? container.dataset.image : '';
+  const breed = (container && container.dataset && container.dataset.breed) ? container.dataset.breed : '';
+  const price = (container && container.dataset && container.dataset.price) ? container.dataset.price : '';
+  const desc = (container && container.dataset && container.dataset.desc) ? container.dataset.desc : '';
+  
+  currentModalBreed = breed;
+  document.getElementById('modal-image').src = img || '/uploads/placeholder.png';
+  document.getElementById('modal-breed').innerText = breed;
+  
+  const p = Number(price);
+  document.getElementById('modal-price').innerText = '₱' + (Number.isNaN(p) ? price : p.toLocaleString('en-US', {minimumFractionDigits:2}));
+  document.getElementById('modal-desc').innerText = desc;
+  
+  renderReviews(breed);
+  renderOtherFishes(breed);
+  
+  const m = document.getElementById('listing-modal');
+  if (m) m.classList.add('show');
+}
+
+function closeListingModal(){ const m = document.getElementById('listing-modal'); if (m) m.classList.remove('show'); }
+function closeCartConfirm(){ const m = document.getElementById('cart-confirm-modal'); if (m) m.classList.remove('show'); }
+
+function showAddToCartModal(breed, price, img, seller){
+  document.getElementById('confirm-breed').innerText = breed;
+  document.getElementById('confirm-price').innerText = '₱' + (Number(price).toLocaleString('en-US', {minimumFractionDigits:2}));
+  document.getElementById('confirm-qty').value = 1;
+  document.getElementById('confirm-address').value = '';
+  
+  const modal = document.getElementById('cart-confirm-modal');
+  if (!modal) return;
+  modal.dataset.breed = breed;
+  modal.dataset.price = price;
+  modal.dataset.seller = seller;
+  if (img) modal.dataset.image = img;
+  modal.classList.add('show');
+}
+
+// New custom helper function to display modern notifications elegantly
+function showToast(message) {
+  const toast = document.getElementById('custom-toast');
+  const textEl = document.getElementById('toast-message-text');
+  
+  if (!toast || !textEl) return;
+  
+  // Set text and reveal toast card smoothly
+  textEl.innerText = message;
+  toast.classList.add('show');
+  
+  // Automatically slide back down out of the screen layout layer after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+// Updated to use showToast instead of raw browser popup alerts
+function confirmAddToCart(){
+  const modal = document.getElementById('cart-confirm-modal');
+  if (!modal) return;
+  const breed = modal.dataset.breed || '';
+  const price = modal.dataset.price || 0;
+  const seller = modal.dataset.seller || 'Merchant';
+  const qty = parseInt(document.getElementById('confirm-qty').value) || 1;
+  const addr = document.getElementById('confirm-address').value.trim();
+  const img = modal.dataset.image || '/uploads/placeholder.png';
+  
+  cart.push({ breed, price, quantity: qty, address: addr, image: img, seller: seller });
+  localStorage.setItem('fish_cart', JSON.stringify(cart));
+  closeCartConfirm();
+  
+  // FIXED: Replaced alert() trigger with our sleek toast alert
+  showToast(breed + ' successfully added to your cart!');
+}
+
+// Updated review alert trigger to match toast configuration parameters
+function submitReview(){
+  const rating = document.getElementById('review-rating').value;
+  const text = document.getElementById('review-text').value.trim();
+  
+  if (!text) {
+    showToast('Please type out review comments first!');
+    return;
+  }
+  
+  const key = 'reviews_' + currentModalBreed;
+  const existing = JSON.parse(localStorage.getItem(key) || '[]');
+  existing.unshift({rating: parseInt(rating), text: text, ts: Date.now()});
+  localStorage.setItem(key, JSON.stringify(existing));
+  document.getElementById('review-text').value = '';
+  renderReviews(currentModalBreed);
+  
+  // FIXED: Beautiful celebration success confirmation
+  showToast('Thank you for publishing your review feedback!');
+}
+
+
+function renderReviews(breed){
+  const key = 'reviews_' + breed;
+  const list = JSON.parse(localStorage.getItem(key) || '[]');
+  const container = document.getElementById('reviews-list');
+  if (!container) return;
+  
+  if (list.length === 0){ 
+    container.innerHTML = '<div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No reviews yet. Be the first to leave feedback!</div>'; 
+    return; 
+  }
+  
+  container.innerHTML = list.map(r => `
+    <div class="js-review-item" style="padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid #f1f5f9;">
+      <span class="js-review-stars" style="color:#f59e0b; font-weight:700;">${'★'.repeat(r.rating)}</span>
+      <span class="js-review-meta" style="font-size:11px; color:#94a3b8; margin-left:6px;">${new Date(r.ts).toLocaleDateString()}</span>
+      <div class="js-review-text" style="margin-top:2px; color:#475569; font-size:13px;">${escapeHtml(r.text)}</div>
+    </div>
+  `).join('');
+}
+
+function renderOtherFishes(breed) {
+  const grid = document.getElementById('product-grid-container');
+  const other = document.getElementById('other-list');
+  if (!grid || !other) return;
+  
+  const cards = Array.from(grid.querySelectorAll('.product-card'));
+  const others = cards.filter(c => {
+    const titleEl = c.querySelector('.product-breed');
+    return titleEl && titleEl.innerText !== breed;
+  }).slice(0, 5);
+  
+  if (others.length === 0) {
+    other.innerHTML = '<div style="font-size:12px; color:#94a3b8;">No other specimens available.</div>';
+    return;
+  }
+  
+  other.innerHTML = others.map(c => {
+    const img = c.querySelector('.product-img') ? c.querySelector('.product-img').src : '/uploads/placeholder.png';
+    const breedText = c.querySelector('.product-breed') ? c.querySelector('.product-breed').innerText : '';
+    const cleanBreed = escapeHtml(breedText);
+    return `
+      <div class="thumb-small" onclick="closeListingModal(); setTimeout(() => { openListingByBreed('${cleanBreed}') }, 150)">
+        <img src="${img}">
+        <div class="thumb-caption">${cleanBreed}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.openListingByBreed = function(breedName) {
+  const grid = document.getElementById('product-grid-container');
+  if (!grid) return;
+  const cards = Array.from(grid.querySelectorAll('.product-card'));
+  const targetCard = cards.find(c => {
+    const breedEl = c.querySelector('.product-breed');
+    return breedEl && breedEl.innerText.trim().toLowerCase() === breedName.trim().toLowerCase();
+  });
+  if (targetCard) openListingModal(targetCard);
+};
+
+function filterProducts(){
+  const searchText = (document.getElementById('market-search')||{value:''}).value.toLowerCase();
+  const productCards = document.getElementsByClassName('product-card');
+  for (let card of productCards){
+    const breedText = (card.querySelector('.product-breed')||{innerText:''}).innerText.toLowerCase();
+    const descText = (card.querySelector('.product-desc')||{innerText:''}).innerText.toLowerCase();
+    const matchesSearch = breedText.includes(searchText) || descText.includes(searchText);
+    let matchesCategory = (currentActiveCategory === 'all');
+    if (!matchesCategory){
+      if (currentActiveCategory === 'discus') matchesCategory = !breedText.includes('goldfish') && !breedText.includes('guppy') && !breedText.includes('betta');
+      else matchesCategory = breedText.includes(currentActiveCategory);
+    }
+    card.style.display = (matchesSearch && matchesCategory) ? 'flex' : 'none';
+  }
+}
+
+function selectCategory(element, categoryName){
+  const tags = document.getElementsByClassName('category-tag');
+  for (let tag of tags) tag.classList.remove('active');
+  element.classList.add('active');
+  currentActiveCategory = categoryName;
+  filterProducts();
+}
+
+function addToCart(breed, price, img, seller){
+  showAddToCartModal(breed, price, img, seller);
+}
+
+function openCartView(){
+  const form = document.getElementById('hidden-view-cart');
+  if (!form) return;
+  const userSpan = document.getElementById('username-span');
+  const username = userSpan ? userSpan.innerText.replace('@', '').trim() : 'guest';
+  document.getElementById('cart-session-user').value = username;
+  form.submit();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closeListingModal(); closeCartConfirm(); } });
+</script>
+</body>
+</html>
